@@ -39,6 +39,8 @@ class WebservCorrectionTester:
         if details:
             print(f"        {YELLOW}{details}{RESET}")
     
+
+
     def check_memory_leaks(self):
         """Check for memory leaks using valgrind"""
         self.print_section("MEMORY LEAK CHECK")
@@ -101,10 +103,11 @@ class WebservCorrectionTester:
 #         finally:
 #             os.unlink(config_path)
 #             subprocess.run(["pkill", "-f", self.binary_path], capture_output=True)
-    
+   
+
     def test_io_multiplexing(self):
-        """Test that select/poll/epoll is used correctly"""
-        self.print_section("I/O MULTIPLEXING CHECK")
+        """Test that epoll is used correctly"""
+        self.print_section("I/O MULTIPLEXING CHECK - EPOLL")
         
         # Start server
         self.server_process = subprocess.Popen(
@@ -115,39 +118,76 @@ class WebservCorrectionTester:
         time.sleep(2)
         
         try:
-            # Get process ID
             pid = self.server_process.pid
             
-            # Check system calls using strace (Linux) or similar
-            if sys.platform == "linux":
-                # Monitor system calls for a short time
-                strace_cmd = f"timeout 2 strace -p {pid} 2>&1"
-                result = subprocess.run(strace_cmd, shell=True, capture_output=True, text=True)
-                
-                # Check for select/poll/epoll
-                syscalls = result.stdout + result.stderr
-                has_select = "select(" in syscalls or "pselect(" in syscalls
-                has_poll = "poll(" in syscalls or "ppoll(" in syscalls  
-                has_epoll = "epoll_" in syscalls
-                
-                if has_select or has_poll or has_epoll:
-                    self.print_test("I/O Multiplexing detected", True, 
-                                  f"Using: {'select' if has_select else 'poll' if has_poll else 'epoll'}")
-                    return True
-                else:
-                    self.print_test("No I/O Multiplexing detected", False)
-                    return False
+            # Monitor epoll calls specifically
+            strace_cmd = f"timeout 2 strace -p {pid} 2>&1 | grep -E 'epoll_(create|wait|ctl)'"
+            result = subprocess.run(strace_cmd, shell=True, capture_output=True, text=True)
+            
+            if "epoll" in result.stdout:
+                epoll_calls = result.stdout.count("epoll")
+                self.print_test("EPOLL detected", True, f"Found {epoll_calls} epoll calls")
+                return True
             else:
-                self.print_test("I/O Multiplexing check", None, "Cannot verify on this OS")
-                return None
+                self.print_test("EPOLL not detected", False)
+                return False
                 
         except Exception as e:
-            self.print_test("I/O Multiplexing test", False, f"Error: {e}")
+            self.print_test("EPOLL test", False, f"Error: {e}")
             return False
         finally:
             self.server_process.terminate()
             self.server_process.wait()
-    
+
+
+    # def test_io_multiplexing(self):
+    #     """Test that select/poll/epoll is used correctly"""
+    #     self.print_section("I/O MULTIPLEXING CHECK")
+        
+    #     # Start server
+    #     self.server_process = subprocess.Popen(
+    #         [self.binary_path, self.config_path],
+    #         stdout=subprocess.PIPE,
+    #         stderr=subprocess.PIPE
+    #     )
+    #     time.sleep(2)
+        
+    #     try:
+    #         # Get process ID
+    #         pid = self.server_process.pid
+            
+    #         # Check system calls using strace (Linux) or similar
+    #         if sys.platform == "linux":
+    #             # Monitor system calls for a short time
+    #             strace_cmd = f"timeout 2 strace -p {pid} 2>&1"
+    #             result = subprocess.run(strace_cmd, shell=True, capture_output=True, text=True)
+                
+    #             # Check for select/poll/epoll
+    #             syscalls = result.stdout + result.stderr
+    #             has_select = "select(" in syscalls or "pselect(" in syscalls
+    #             has_poll = "poll(" in syscalls or "ppoll(" in syscalls  
+    #             has_epoll = "epoll_" in syscalls
+                
+    #             if has_select or has_poll or has_epoll:
+    #                 self.print_test("I/O Multiplexing detected", True, 
+    #                               f"Using: {'select' if has_select else 'poll' if has_poll else 'epoll'}")
+    #                 return True
+    #             else:
+    #                 self.print_test("No I/O Multiplexing detected", False)
+    #                 return False
+    #         else:
+    #             self.print_test("I/O Multiplexing check", None, "Cannot verify on this OS")
+    #             return None
+                
+    #     except Exception as e:
+    #         self.print_test("I/O Multiplexing test", False, f"Error: {e}")
+    #         return False
+    #     finally:
+    #         self.server_process.terminate()
+    #         self.server_process.wait()
+   
+
+
     def test_configuration(self):
         """Test configuration requirements from correction sheet"""
         self.print_section("CONFIGURATION TESTS")
@@ -258,6 +298,8 @@ server {
         
         return all(tests_passed)
     
+
+
     def test_basic_checks(self):
         """Test basic HTTP functionality"""
         self.print_section("BASIC FUNCTIONALITY CHECKS")
@@ -323,6 +365,8 @@ server {
         
         return all(tests_passed)
     
+
+
     def test_cgi(self):
         """Test CGI functionality"""
         self.print_section("CGI TESTS")
@@ -386,6 +430,8 @@ while True:
         
         return all(tests_passed)
     
+
+
     def test_browser_compatibility(self):
         """Test browser compatibility"""
         self.print_section("BROWSER COMPATIBILITY")
@@ -444,6 +490,8 @@ while True:
         
         return all(tests_passed)
     
+
+
     def test_port_issues(self):
         """Test port configuration issues"""
         self.print_section("PORT CONFIGURATION TESTS")
@@ -537,7 +585,9 @@ server {
         os.unlink(path2)
         
         return all(tests_passed)
-    
+
+
+
     def test_stress(self):
         """Run stress tests with siege"""
         self.print_section("STRESS TESTS")
@@ -599,6 +649,8 @@ server {
         self.server_process.wait()
         
         return all(tests_passed)
+
+
     
     def test_bonus(self):
         """Test bonus features"""
@@ -633,6 +685,8 @@ server {
         
         return all(tests_passed)
     
+
+
     def run_correction_tests(self):
         """Run all correction sheet tests"""
         print(f"\n{BLUE}{'='*60}{RESET}")
@@ -729,6 +783,8 @@ server {
                 print(f"{RED}{'NEEDS WORK - Multiple issues found':^60}{RESET}")
             
             print(f"\n{BLUE}Score: {passed}/{total} tests passed ({percentage:.1f}%){RESET}")
+
+
 
 if __name__ == "__main__":
 
