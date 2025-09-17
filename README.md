@@ -8,12 +8,10 @@ python3 test_general.py ./webserv config/example.conf
 python3 test_correction.py ./webserv config/example.conf
 
 # For stress tests, install siege first
-brew install siege  # macOS
-# or
 sudo apt-get install siege  # Linux
+brew install siege  # macOS
 
-
-Required (and present on 42 School Computers) (if you type: whereis)
+Required (and present on 42 School Computers) (verify with command: whereis)
 pip3 install psutil
 
 
@@ -26,9 +24,7 @@ The tests provide colored output:
 🔵 BLUE: Section headers
 
 The correction sheet test will indicate if any failure would result in a grade of 0 (like memory leaks or missing I/O multiplexing).
-Important Notes
 
-Both test files are designed to work with the actual webserv implementation from your GitHub repository
+Notes
 The tests match the configuration structure in config/example.conf
-CGI scripts (lotr.py and star_wars.sh) are tested as found in your project
-The correction test specifically checks for mandatory requirements that would result in automatic failure
+CGI scripts (lotr.py and star_wars.sh) are tested
